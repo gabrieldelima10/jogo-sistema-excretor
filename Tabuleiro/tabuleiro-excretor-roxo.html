@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tabuleiro do Sistema Excretor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f3e5f5; /* Roxo claro */
+            text-align: center;
+            padding: 20px;
+        }
+        h1 {
+            color: #6a1b9a; /* Roxo escuro */
+            margin-bottom: 5px;
+        }
+        .group-members {
+            color: #9c27b0; /* Roxo médio */
+            font-style: italic;
+            margin-bottom: 20px;
+        }
+        #board {
+            display: flex;
+            flex-wrap: wrap;
+            width: 500px;
+            margin: 20px auto;
+            border: 3px solid #6a1b9a;
+            border-radius: 10px;
+            background-color: #ba68c8; /* Roxo claro */
+            box-shadow: 0 0 10px rgba(106, 27, 154, 0.3);
+        }
+        .cell {
+            width: 50px;
+            height: 50px;
+            border: 1px solid #9c27b0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            font-size: 12px;
+            background-color: #e1bee7; /* Roxo muito claro */
+        }
+        .player {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            position: absolute;
+            z-index: 10;
+            transition: all 0.3s;
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+        #player1 { background-color: #7b1fa2; } /* Roxo escuro */
+        #player2 { background-color: #ff9800; } /* Laranja (contraste) */
+        #controls {
+            margin: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #9c27b0;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #7b1fa2;
+        }
+        #dice-result {
+            font-size: 18px;
+            margin: 10px;
+            color: #6a1b9a;
+            font-weight: bold;
+        }
+        .special {
+            background-color: #ce93d8 !important; /* Roxo médio-claro */
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>Tabuleiro do Sistema Excretor</h1>
+    <div class="group-members">Gabriel de Lima, Danilo, Isaac Nicolas, Gabriel Fausto, Kauã</div>
+    <p>Jogue e aprenda sobre rins, urina e filtração!</p>
+    
+    <div id="board"></div>
+    
+    <div id="controls">
+        <button id="roll-dice">Rolar Dado</button>
+        <div id="dice-result">Dado: <span id="dice-value">0</span></div>
+        <div id="player-turn">Vez do: <span id="current-player">Jogador 1 (Roxo)</span></div>
+    </div>
+
+    <script>
+        // Configurações do jogo
+        const BOARD_SIZE = 10;
+        const TOTAL_CELLS = BOARD_SIZE * BOARD_SIZE;
+        let currentPlayer = 1;
+        let playerPositions = { 1: 0, 2: 0 };
+        
+        // Perguntas sobre Sistema Excretor
+        const biologyQuestions = [
+            {
+                question: "Qual é o principal órgão do sistema excretor humano?",
+                answer: "rim",
+                options: ["Pulmão", "Rim", "Fígado", "Coração"]
+            },
+            {
+                question: "O que a urina contém que é filtrado pelos rins?",
+                answer: "ureia",
+                options: ["Glicose", "Oxigênio", "Ureia", "Hemoglobina"]
+            },
+            {
+                question: "Qual estrutura dos rins é responsável pela filtração do sangue?",
+                answer: "néfron",
+                options: ["Alvéolo", "Néfron", "Neurônio", "Glóbulo Vermelho"]
+            },
+            {
+                question: "O que é diálise?",
+                answer: "tratamento para substituir a função dos rins",
+                options: ["Tipo de urina", "Tratamento para substituir a função dos rins", "Parte do intestino", "Hormônio renal"]
+            },
+            {
+                question: "Qual hormônio regula a reabsorção de água nos rins?",
+                answer: "adh",
+                options: ["Insulina", "ADH (Hormônio Antidiurético)", "Adrenalina", "Estrogênio"]
+            }
+        ];
+        
+        // Inicializa o tabuleiro
+        const board = document.getElementById('board');
+        const rollDiceBtn = document.getElementById('roll-dice');
+        const diceValue = document.getElementById('dice-value');
+        const currentPlayerDisplay = document.getElementById('current-player');
+        
+        function createBoard() {
+            board.innerHTML = '';
+            
+            for (let i = 0; i < TOTAL_CELLS; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.id = `cell-${i}`;
+                cell.textContent = i + 1;
+                
+                // Casas especiais (múltiplos de 3, 6 e 9)
+                if (i % 3 === 0 || i % 6 === 0 || i % 9 === 0) {
+                    cell.classList.add('special');
+                    cell.textContent = '❓ ' + (i + 1);
+                }
+                
+                board.appendChild(cell);
+            }
+            
+            placePlayer(1);
+            placePlayer(2);
+        }
+        
+        function placePlayer(playerId) {
+            const player = document.createElement('div');
+            player.className = 'player';
+            player.id = `player${playerId}`;
+            document.getElementById(`cell-${playerPositions[playerId]}`).appendChild(player);
+        }
+        
+        function rollDice() {
+            rollDiceBtn.disabled = true;
+            
+            let rolls = 0;
+            const diceInterval = setInterval(() => {
+                const value = Math.floor(Math.random() * 6) + 1;
+                diceValue.textContent = value;
+                rolls++;
+                
+                if (rolls >= 5) {
+                    clearInterval(diceInterval);
+                    movePlayer(value);
+                }
+            }, 100);
+        }
+        
+        function movePlayer(steps) {
+            const playerId = currentPlayer;
+            let newPosition = playerPositions[playerId] + steps;
+            
+            if (newPosition >= TOTAL_CELLS - 1) {
+                newPosition = TOTAL_CELLS - 1;
+                setTimeout(() => {
+                    alert(`🎉 Jogador ${playerId} venceu! Parabéns! 🎉`);
+                    resetGame();
+                }, 500);
+            }
+            
+            updatePlayerPosition(playerId, newPosition);
+            
+            if ((newPosition % 3 === 0 || newPosition % 6 === 0 || newPosition % 9 === 0) && newPosition < TOTAL_CELLS - 1) {
+                setTimeout(() => {
+                    askBiologyQuestion(playerId);
+                }, 800);
+            } else {
+                setTimeout(() => {
+                    switchPlayer();
+                }, 800);
+            }
+        }
+        
+        function updatePlayerPosition(playerId, newPosition) {
+            const oldPosition = playerPositions[playerId];
+            playerPositions[playerId] = newPosition;
+            
+            const player = document.getElementById(`player${playerId}`);
+            const oldCell = document.getElementById(`cell-${oldPosition}`);
+            const newCell = document.getElementById(`cell-${newPosition}`);
+            
+            oldCell.removeChild(player);
+            newCell.appendChild(player);
+        }
+        
+        function askBiologyQuestion(playerId) {
+            const randomQuestion = biologyQuestions[Math.floor(Math.random() * biologyQuestions.length)];
+            const userAnswer = prompt(
+                `${randomQuestion.question}\n\nOpções: ${randomQuestion.options.join(", ")}`
+            );
+            
+            if (userAnswer && userAnswer.toLowerCase().includes(randomQuestion.answer)) {
+                alert("Resposta correta! Avance +2 casas!");
+                movePlayer(2);
+            } else {
+                alert(`Resposta errada! A resposta correta era: ${randomQuestion.answer}`);
+                switchPlayer();
+            }
+        }
+        
+        function switchPlayer() {
+            currentPlayer = currentPlayer === 1 ? 2 : 1;
+            currentPlayerDisplay.textContent = `Jogador ${currentPlayer} (${currentPlayer === 1 ? 'Roxo' : 'Laranja'})`;
+            rollDiceBtn.disabled = false;
+        }
+        
+        function resetGame() {
+            playerPositions = { 1: 0, 2: 0 };
+            currentPlayer = 1;
+            currentPlayerDisplay.textContent = "Jogador 1 (Roxo)";
+            diceValue.textContent = "0";
+            createBoard();
+            rollDiceBtn.disabled = false;
+        }
+        
+        rollDiceBtn.addEventListener('click', rollDice);
+        createBoard();
+    </script>
+</body>
+</html>
